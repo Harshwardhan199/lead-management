@@ -132,10 +132,23 @@ const getMe = async (req, res, next) => {
   }
 };
 
+/**
+ * Get all users
+ */
+const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await authService.getAllUsers();
+    return sendSuccess(res, 200, 'Users retrieved successfully', users);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   refresh,
   logout,
   getMe,
+  getAllUsers,
 };
