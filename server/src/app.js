@@ -3,6 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const env = require('./config/env');
 const authRoutes = require('./routes/auth.routes');
+const leadRoutes = require('./routes/lead.routes');
 const errorHandler = require('./middlewares/error.middleware');
 
 const app = express();
@@ -27,8 +28,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Auth API Routes
+// API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/leads', leadRoutes);
 
 // Global Error Handling Middleware
 app.use(errorHandler);
