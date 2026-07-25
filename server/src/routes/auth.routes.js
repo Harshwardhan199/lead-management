@@ -13,6 +13,7 @@ router.post('/logout', authController.logout);
 
 // Protected auth routes
 router.get('/me', authenticate, authController.getMe);
+router.get('/users', authenticate, authController.getAllUsers);
 
 // Admin-only RBAC route
 router.get('/admin-only', authenticate, authorize('admin'), (req, res) => {

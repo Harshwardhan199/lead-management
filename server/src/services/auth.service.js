@@ -155,10 +155,19 @@ const getCurrentUser = async (userId) => {
   return user;
 };
 
+/**
+ * Get all registered users (for lead assignment target selection)
+ * @returns {Promise<Array>} Array of user objects
+ */
+const getAllUsers = async () => {
+  return await User.find({}).sort({ createdAt: -1 });
+};
+
 module.exports = {
   registerUser,
   loginUser,
   refreshAccessToken,
   logoutUser,
   getCurrentUser,
+  getAllUsers,
 };
