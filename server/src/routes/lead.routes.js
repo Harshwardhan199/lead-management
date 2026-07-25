@@ -8,9 +8,22 @@ const {
   addNoteValidation,
 } = require('../validators/lead.validator');
 
+const leadService = require('../services/lead.service');
+const { sendSuccess } = require('../utils/response.utils');
+
 const router = express.Router();
 
-// All lead routes require authentication
+// Public unauthenticated lead submission for landing page
+router.post('/public', createLeadValidation, async (req, res, next) => {
+  try {
+    const lead = await leadService.createLead(req.body, { id: null });
+    return sendSuccess(res, 201, 'Lead submitted successfully', lead);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Protected routes requiring authentication
 router.use(authenticate);
 
 // Admin-only lead creation

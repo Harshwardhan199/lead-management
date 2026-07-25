@@ -1,7 +1,11 @@
 const express = require('express');
 const authController = require('../controllers/auth.controller');
 const { authenticate, authorize } = require('../middlewares/auth.middleware');
-const { registerValidation, loginValidation } = require('../validators/auth.validator');
+const {
+  registerValidation,
+  createAdminValidation,
+  loginValidation,
+} = require('../validators/auth.validator');
 
 const router = express.Router();
 
@@ -15,7 +19,24 @@ router.post('/logout', authController.logout);
 router.get('/me', authenticate, authController.getMe);
 router.get('/users', authenticate, authController.getAllUsers);
 
-// Admin-only RBAC route
+// Admin-only creation endpoint
+router.post(
+  '/admins',
+  authenticate,
+  authorize('admin'),
+  createAdminValidation,
+  authController.createAdmin
+);
+
+// Admin-only: update any user's role
+router.patch(
+  '/users/:id/role',
+  authenticate,
+  authorize('admin'),
+  authController.updateUserRole
+);
+
+// Admin-only test route
 router.get('/admin-only', authenticate, authorize('admin'), (req, res) => {
   res.status(200).json({
     success: true,

@@ -25,10 +25,15 @@ const registerValidation = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
-  body('role')
-    .optional()
-    .isIn(['admin', 'member'])
-    .withMessage('Role must be either admin or member'),
+  validate,
+];
+
+const createAdminValidation = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
   validate,
 ];
 
@@ -40,5 +45,6 @@ const loginValidation = [
 
 module.exports = {
   registerValidation,
+  createAdminValidation,
   loginValidation,
 };

@@ -15,7 +15,7 @@ const authService = require('../services/auth.service');
 const tokenUtils = require('../utils/token.utils');
 const app = require('../app');
 
-describe('JWT Authentication API & Middleware', () => {
+describe('JWT Authentication & Secure Admin Creation API', () => {
   beforeAll(() => {
     jest.spyOn(dotenv, 'config').mockImplementation(() => {});
   });
@@ -65,32 +65,110 @@ describe('JWT Authentication API & Middleware', () => {
     });
   });
 
-  describe('Auth Controller & Routes Integration', () => {
-    test('POST /api/auth/register - 201 Created with JSON payload and HttpOnly cookie', async () => {
+  describe('Public Registration Security Rules', () => {
+    test('POST /api/auth/register - 201 Created always creates member account even if role=admin sent', async () => {
       const mockResult = {
         user: { _id: '123', name: 'John Doe', email: 'john@example.com', role: 'member' },
         accessToken: 'mock_access_token_123',
         refreshToken: 'mock_refresh_token_123',
       };
-      jest.spyOn(authService, 'registerUser').mockResolvedValue(mockResult);
+      const registerSpy = jest
+        .spyOn(authService, 'registerUser')
+        .mockResolvedValue(mockResult);
 
       const res = await request(app).post('/api/auth/register').send({
         name: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
+        role: 'admin', // Tampering attempt by client
       });
 
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.user.email).toBe('john@example.com');
-      expect(res.body.data.accessToken).toBe('mock_access_token_123');
+      expect(res.body.data.user.role).toBe('member');
+      expect(registerSpy).toHaveBeenCalledWith({
+        name: 'John Doe',
+        email: 'john@example.com',
+        password: 'password123',
+      });
+    });
+  });
 
-      const cookies = res.headers['set-cookie'];
-      expect(cookies).toBeDefined();
-      expect(cookies[0]).toContain('refreshToken=mock_refresh_token_123');
-      expect(cookies[0]).toContain('HttpOnly');
+  describe('Admin Creation Endpoint (POST /api/auth/admins)', () => {
+    test('Admin - 201 Created creates admin user without issuing tokens or cookies', async () => {
+      const adminAccessToken = tokenUtils.generateAccessToken({
+        id: 'admin1',
+        email: 'superadmin@example.com',
+        role: 'admin',
+      });
+
+      const newAdminUser = {
+        _id: 'admin2',
+        name: 'New Admin',
+        email: 'newadmin@example.com',
+        role: 'admin',
+      };
+
+      const createAdminSpy = jest
+        .spyOn(authService, 'createAdminUser')
+        .mockResolvedValue(newAdminUser);
+
+      const res = await request(app)
+        .post('/api/auth/admins')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({
+          name: 'New Admin',
+          email: 'newadmin@example.com',
+          password: 'Password123!',
+          role: 'member', // Client attempt to override role
+        });
+
+      expect(res.statusCode).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toBe('Admin created successfully');
+      expect(res.body.data.user.role).toBe('admin');
+      expect(res.body.data.accessToken).toBeUndefined();
+      expect(res.headers['set-cookie']).toBeUndefined();
+      expect(createAdminSpy).toHaveBeenCalledWith({
+        name: 'New Admin',
+        email: 'newadmin@example.com',
+        password: 'Password123!',
+      });
     });
 
+    test('Member - 403 Forbidden on admin creation attempt', async () => {
+      const memberAccessToken = tokenUtils.generateAccessToken({
+        id: 'mem1',
+        email: 'member@example.com',
+        role: 'member',
+      });
+
+      const res = await request(app)
+        .post('/api/auth/admins')
+        .set('Authorization', `Bearer ${memberAccessToken}`)
+        .send({
+          name: 'Fake Admin',
+          email: 'fakeadmin@example.com',
+          password: 'Password123!',
+        });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('Unauthenticated - 401 Unauthorized on admin creation attempt', async () => {
+      const res = await request(app).post('/api/auth/admins').send({
+        name: 'Fake Admin',
+        email: 'fakeadmin@example.com',
+        password: 'Password123!',
+      });
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('Auth Controller & Routes Integration', () => {
     test('POST /api/auth/login - 200 OK with JSON payload and HttpOnly cookie', async () => {
       const mockResult = {
         user: { _id: '123', name: 'John Doe', email: 'john@example.com', role: 'member' },
