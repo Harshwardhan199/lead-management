@@ -6,6 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import Pagination from '../components/Pagination';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CreateLeadModal from '../components/modals/CreateLeadModal';
+import CreateAdminModal from '../components/modals/CreateAdminModal';
 import AssignModal from '../components/modals/AssignModal';
 import ConfirmDeleteModal from '../components/modals/ConfirmDeleteModal';
 import StatusUpdateModal from '../components/modals/StatusUpdateModal';
@@ -26,6 +27,7 @@ import {
   Clock,
   CheckCircle,
   UserX,
+  ShieldCheck,
 } from 'lucide-react';
 
 const DashboardPage = () => {
@@ -44,6 +46,7 @@ const DashboardPage = () => {
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
   const [assignModalData, setAssignModalData] = useState({ isOpen: false, lead: null });
   const [deleteModalData, setDeleteModalData] = useState({ isOpen: false, lead: null });
   const [statusModalData, setStatusModalData] = useState({ isOpen: false, lead: null });
@@ -128,13 +131,23 @@ const DashboardPage = () => {
           </div>
 
           {isAdmin && (
-            <button
-              onClick={() => setIsCreateOpen(true)}
-              className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-2xl shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create New Lead</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setIsCreateAdminOpen(true)}
+                className="flex items-center gap-2 px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 font-semibold text-sm rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Create Admin</span>
+              </button>
+
+              <button
+                onClick={() => setIsCreateOpen(true)}
+                className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-2xl shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create New Lead</span>
+              </button>
+            </div>
           )}
         </div>
 
@@ -406,6 +419,12 @@ const DashboardPage = () => {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreated={fetchLeads}
+      />
+
+      <CreateAdminModal
+        isOpen={isCreateAdminOpen}
+        onClose={() => setIsCreateAdminOpen(false)}
+        onCreated={fetchTeamMembers}
       />
 
       <AssignModal

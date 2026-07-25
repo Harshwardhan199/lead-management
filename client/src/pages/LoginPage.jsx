@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, UserPlus, Mail, Lock, User, Shield, Loader2 } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User, Info, Loader2 } from 'lucide-react';
 
 const LoginPage = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -9,7 +9,6 @@ const LoginPage = () => {
     name: '',
     email: '',
     password: '',
-    role: 'member',
   });
 
   const [loading, setLoading] = useState(false);
@@ -32,7 +31,7 @@ const LoginPage = () => {
 
     try {
       if (isRegistering) {
-        await register(formData.name, formData.email, formData.password, formData.role);
+        await register(formData.name, formData.email, formData.password);
       } else {
         await login(formData.email, formData.password);
       }
@@ -163,49 +162,9 @@ const LoginPage = () => {
             </div>
 
             {isRegistering && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Account Role
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label
-                    className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${
-                      formData.role === 'member'
-                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400'
-                        : 'bg-slate-800/50 border-slate-700 text-slate-400'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value="member"
-                      checked={formData.role === 'member'}
-                      onChange={handleChange}
-                      className="sr-only"
-                    />
-                    <User className="w-4 h-4" />
-                    <span className="text-xs font-bold">Member</span>
-                  </label>
-
-                  <label
-                    className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${
-                      formData.role === 'admin'
-                        ? 'bg-purple-500/10 border-purple-500 text-purple-400'
-                        : 'bg-slate-800/50 border-slate-700 text-slate-400'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value="admin"
-                      checked={formData.role === 'admin'}
-                      onChange={handleChange}
-                      className="sr-only"
-                    />
-                    <Shield className="w-4 h-4" />
-                    <span className="text-xs font-bold">Admin</span>
-                  </label>
-                </div>
+              <div className="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400 text-xs">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>All new accounts are registered as Team Members.</span>
               </div>
             )}
 

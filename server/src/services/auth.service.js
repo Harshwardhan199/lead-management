@@ -7,19 +7,24 @@ const ApiError = require('../utils/apiError');
  * @param {Object} userData 
  * @returns {Promise<Object>} User, accessToken, and refreshToken
  */
-const registerUser = async ({ name, email, password, role }) => {
+/**
+ * Register a new public user (always member role)
+ * @param {Object} userData 
+ * @returns {Promise<Object>} User, accessToken, and refreshToken
+ */
+const registerUser = async ({ name, email, password }) => {
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw new ApiError(409, 'User with this email already exists');
   }
 
-  // Create user instance
+  // Create user instance - ALWAYS force member role
   const user = new User({
     name,
     email,
     password,
-    role: role || 'member',
+    role: 'member',
   });
 
   // Generate tokens
@@ -39,6 +44,30 @@ const registerUser = async ({ name, email, password, role }) => {
     accessToken,
     refreshToken,
   };
+};
+
+/**
+ * Create an admin user (Admin-only creation endpoint)
+ * @param {Object} userData 
+ * @returns {Promise<Object>} User document
+ */
+const createAdminUser = async ({ name, email, password }) => {
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw new ApiError(409, 'User with this email already exists');
+  }
+
+  // Create user instance - ALWAYS force admin role
+  const user = new User({
+    name,
+    email,
+    password,
+    role: 'admin',
+  });
+
+  await user.save();
+  return user;
 };
 
 /**
@@ -165,6 +194,7 @@ const getAllUsers = async () => {
 
 module.exports = {
   registerUser,
+  createAdminUser,
   loginUser,
   refreshAccessToken,
   logoutUser,
