@@ -16,16 +16,15 @@ const getCookieOptions = () => ({
 });
 
 /**
- * Register a new user
+ * Register a new public user (always Member role)
  */
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
     const { user, accessToken, refreshToken } = await authService.registerUser({
       name,
       email,
       password,
-      role,
     });
 
     // Set refresh token in HttpOnly cookie
@@ -34,6 +33,26 @@ const register = async (req, res, next) => {
     return sendSuccess(res, 201, 'User registered successfully', {
       user,
       accessToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Create a new Admin user (Admin-only creation endpoint)
+ */
+const createAdmin = async (req, res, next) => {
+  try {
+    const { name, email, password } = req.body;
+    const user = await authService.createAdminUser({
+      name,
+      email,
+      password,
+    });
+
+    return sendSuccess(res, 201, 'Admin created successfully', {
+      user,
     });
   } catch (error) {
     next(error);
@@ -144,11 +163,27 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
+/**
+ * Update user role (Admin-only)
+ */
+const updateUserRole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    const user = await authService.updateUserRole(id, role);
+    return sendSuccess(res, 200, 'User role updated successfully', { user });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
+  createAdmin,
   login,
   refresh,
   logout,
   getMe,
   getAllUsers,
+  updateUserRole,
 };

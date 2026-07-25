@@ -55,7 +55,7 @@ const leadSchema = new mongoose.Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'CreatedBy user ID is required'],
+      default: null,
     },
   },
   {
