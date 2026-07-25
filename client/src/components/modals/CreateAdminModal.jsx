@@ -1,135 +1,243 @@
-import React, { useState } from 'react';
-import { X, ShieldCheck, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Users, Search, ChevronDown, Check, Loader2, ShieldCheck, User } from 'lucide-react';
 import api from '../../api/axios';
 
-const CreateAdminModal = ({ isOpen, onClose, onCreated }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-  });
-
+// ─── Inline role mini-select ──────────────────────────────────────────────────
+const RoleSelect = ({ userId, currentRole, onRoleChanged }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [value, setValue] = useState(currentRole);
+  const ref = useRef(null);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSelect = async (newRole) => {
+    if (newRole === value) { setIsOpen(false); return; }
     try {
       setLoading(true);
-      setError('');
-      await api.post('/auth/admins', formData);
-      setFormData({ name: '', email: '', password: '' });
-      if (onCreated) onCreated();
-      onClose();
+      await api.patch(`/auth/users/${userId}/role`, { role: newRole });
+      setValue(newRole);
+      if (onRoleChanged) onRoleChanged(userId, newRole);
     } catch (err) {
-      const msg =
-        err.response?.data?.errors?.map((e) => e.message || e).join(', ') ||
-        err.response?.data?.message ||
-        'Failed to create admin user';
-      setError(msg);
+      // silent – could add toast
+    } finally {
+      setLoading(false);
+      setIsOpen(false);
+    }
+  };
+
+  const isAdmin = value === 'admin';
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={loading}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black border transition-all ${
+          isAdmin
+            ? 'bg-[#2A4B3A] text-white border-[#2A4B3A]'
+            : 'bg-[#FAF8F0] text-[#161D18] border-[#C5C2B4] hover:bg-[#EAE7DC]'
+        }`}
+      >
+        {loading ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : (
+          <>
+            <span className="capitalize">{value}</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </>
+        )}
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            transition={{ duration: 0.12 }}
+            className="absolute right-0 top-full mt-1.5 w-32 bg-[#FAF8F0] border border-[#C5C2B4] rounded-2xl shadow-xl z-50 p-1.5"
+          >
+            {['member', 'admin'].map((role) => (
+              <div
+                key={role}
+                onClick={() => handleSelect(role)}
+                className={`flex items-center justify-between px-3 py-1.5 text-[11px] font-bold rounded-xl cursor-pointer transition-colors capitalize ${
+                  value === role
+                    ? 'bg-[#2A4B3A] text-white'
+                    : 'text-[#161D18] hover:bg-[#EAE7DC]'
+                }`}
+              >
+                <span>{role}</span>
+                {value === role && <Check className="w-3 h-3" />}
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ─── Main Modal ───────────────────────────────────────────────────────────────
+const ManageRolesModal = ({ isOpen, onClose, onUpdated }) => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setSearch('');
+      fetchUsers();
+    }
+  }, [isOpen]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/auth/users');
+      setUsers(res.data.data || []);
+    } catch (err) {
+      // silent
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRoleChanged = (userId, newRole) => {
+    setUsers((prev) =>
+      prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
+    );
+    if (onUpdated) onUpdated();
+  };
+
+  const filtered = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase())
+  );
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl">
-              <ShieldCheck className="w-5 h-5" />
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0, y: 10 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 10 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-[#FAF8F0]/95 backdrop-blur-xl border border-[#C5C2B4]/80 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-[#C5C2B4]/60">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-[#2A4B3A]" />
+              <h3 className="text-lg font-black text-[#161D18] tracking-tight">Manage Team Roles</h3>
             </div>
-            <h3 className="text-lg font-bold text-white">Create Admin Account</h3>
+            <button
+              onClick={onClose}
+              className="text-stone-500 hover:text-[#161D18] p-1.5 rounded-full hover:bg-[#EAE7DC]/60"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {error && (
-          <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Admin Name *
-            </label>
+          {/* Search */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-stone-500 absolute left-3 top-3" />
             <input
               type="text"
-              name="name"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="John Admin"
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or email…"
+              className="w-full bg-[#F0EEE4] border border-[#C5C2B4] rounded-2xl pl-9 pr-4 py-2 text-[#161D18] text-xs focus:border-[#2A4B3A] outline-none"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              name="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="admin@example.com"
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-            />
+          {/* User list */}
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {loading ? (
+              <div className="py-8 flex justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-[#2A4B3A]" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="text-center text-xs text-[#575D58] py-6 font-medium">No users found.</p>
+            ) : (
+              filtered.map((u) => {
+                const isAdminUser = u.role === 'admin';
+                const initials = u.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase();
+
+                return (
+                  <div
+                    key={u._id}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5 bg-[#F0EEE4] rounded-2xl border border-[#C5C2B4]/60"
+                  >
+                    {/* Avatar + info */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black shrink-0 ${
+                          isAdminUser
+                            ? 'bg-[#2A4B3A] text-white'
+                            : 'bg-[#C5C2B4]/60 text-[#161D18]'
+                        }`}
+                      >
+                        {isAdminUser ? (
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                        ) : (
+                          initials
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-black text-[#161D18] truncate">{u.name}</div>
+                        <div className="text-[10px] text-[#575D58] truncate font-medium">{u.email}</div>
+                      </div>
+                    </div>
+
+                    {/* Role dropdown */}
+                    <RoleSelect
+                      userId={u._id}
+                      currentRole={u.role}
+                      onRoleChanged={handleRoleChanged}
+                    />
+                  </div>
+                );
+              })
+            )}
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Password *
-            </label>
-            <input
-              type="password"
-              name="password"
-              required
-              minLength={6}
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          {/* Footer */}
+          <div className="flex justify-end pt-2 border-t border-[#C5C2B4]/60">
             <button
-              type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-xl hover:bg-slate-800"
+              className="px-6 py-2.5 text-xs font-bold text-white bg-[#2A4B3A] hover:bg-[#1E372B] rounded-full shadow-md shadow-[#2A4B3A]/20 transition-all hover:scale-105 active:scale-95"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-500 rounded-xl shadow-lg shadow-purple-600/30 disabled:opacity-50"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Create Admin
+              Done
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
-export default CreateAdminModal;
+export default ManageRolesModal;

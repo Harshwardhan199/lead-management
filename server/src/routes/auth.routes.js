@@ -28,6 +28,14 @@ router.post(
   authController.createAdmin
 );
 
+// Admin-only: update any user's role
+router.patch(
+  '/users/:id/role',
+  authenticate,
+  authorize('admin'),
+  authController.updateUserRole
+);
+
 // Admin-only test route
 router.get('/admin-only', authenticate, authorize('admin'), (req, res) => {
   res.status(200).json({

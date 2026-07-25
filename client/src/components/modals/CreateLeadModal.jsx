@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Plus, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Loader2 } from 'lucide-react';
 import api from '../../api/axios';
 
 const CreateLeadModal = ({ isOpen, onClose, onCreated }) => {
@@ -36,11 +37,7 @@ const CreateLeadModal = ({ isOpen, onClose, onCreated }) => {
       onCreated();
       onClose();
     } catch (err) {
-      const msg =
-        err.response?.data?.errors?.join(', ') ||
-        err.response?.data?.message ||
-        'Failed to create lead';
-      setError(msg);
+      setError(err.response?.data?.message || 'Failed to create lead');
     } finally {
       setLoading(false);
     }
@@ -49,33 +46,40 @@ const CreateLeadModal = ({ isOpen, onClose, onCreated }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl">
-              <Plus className="w-5 h-5" />
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0, y: 10 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 10 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-[#FAF8F0]/95 backdrop-blur-xl border border-[#C5C2B4]/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5"
+        >
+          <div className="flex items-center justify-between pb-4 border-b border-[#C5C2B4]/60">
+            <h3 className="text-lg font-black text-[#161D18] tracking-tight">Create New Lead</h3>
+            <button
+              onClick={onClose}
+              className="text-stone-500 hover:text-[#161D18] p-1.5 rounded-full hover:bg-[#EAE7DC]/60"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-medium">
+              {error}
             </div>
-            <h3 className="text-lg font-bold text-white">Create New Lead</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+          )}
 
-        {error && (
-          <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+              <label className="block text-[11px] font-extrabold text-[#161D18] uppercase tracking-wider mb-1">
                 Full Name *
               </label>
               <input
@@ -84,111 +88,111 @@ const CreateLeadModal = ({ isOpen, onClose, onCreated }) => {
                 required
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Jane Doe"
-                className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                placeholder="John Doe"
+                className="w-full bg-[#F0EEE4] border border-[#C5C2B4] rounded-2xl px-4 py-2.5 text-[#161D18] text-sm focus:border-[#2A4B3A] focus:ring-4 focus:ring-[#2A4B3A]/15 outline-none"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="jane@example.com"
-                className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
-              />
-            </div>
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#161D18] uppercase tracking-wider mb-1">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="john@example.com"
+                  className="w-full bg-[#F0EEE4] border border-[#C5C2B4] rounded-2xl px-4 py-2.5 text-[#161D18] text-sm focus:border-[#2A4B3A] focus:ring-4 focus:ring-[#2A4B3A]/15 outline-none"
+                />
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                Phone Number *
-              </label>
-              <input
-                type="text"
-                name="phone"
-                required
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+1 555-0199"
-                className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
-              />
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#161D18] uppercase tracking-wider mb-1">
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="+1 (555) 019-2834"
+                  className="w-full bg-[#F0EEE4] border border-[#C5C2B4] rounded-2xl px-4 py-2.5 text-[#161D18] text-sm focus:border-[#2A4B3A] focus:ring-4 focus:ring-[#2A4B3A]/15 outline-none"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                Company
+              <label className="block text-[11px] font-extrabold text-[#161D18] uppercase tracking-wider mb-1">
+                Company Name
               </label>
               <input
                 type="text"
                 name="company"
                 value={formData.company}
                 onChange={handleChange}
-                placeholder="Acme Inc"
-                className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                placeholder="Acme Technologies Inc."
+                className="w-full bg-[#F0EEE4] border border-[#C5C2B4] rounded-2xl px-4 py-2.5 text-[#161D18] text-sm focus:border-[#2A4B3A] focus:ring-4 focus:ring-[#2A4B3A]/15 outline-none"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Initial Status
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
-            >
-              <option value="New">New</option>
-              <option value="Contacted">Contacted</option>
-              <option value="Qualified">Qualified</option>
-              <option value="Proposal Sent">Proposal Sent</option>
-              <option value="Won">Won</option>
-              <option value="Lost">Lost</option>
-            </select>
-          </div>
+            <div>
+              <label className="block text-[11px] font-extrabold text-[#161D18] uppercase tracking-wider mb-1">
+                Initial Status
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full bg-[#F0EEE4] border border-[#C5C2B4] rounded-2xl px-4 py-2.5 text-[#161D18] text-sm focus:border-[#2A4B3A] focus:ring-4 focus:ring-[#2A4B3A]/15 outline-none"
+              >
+                <option value="New">New</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Qualified">Qualified</option>
+                <option value="Proposal Sent">Proposal Sent</option>
+                <option value="Won">Won</option>
+                <option value="Lost">Lost</option>
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Message / Notes
-            </label>
-            <textarea
-              name="message"
-              rows={3}
-              value={formData.message}
-              onChange={handleChange}
-              placeholder="Requirements or lead notes..."
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
-            />
-          </div>
+            <div>
+              <label className="block text-[11px] font-extrabold text-[#161D18] uppercase tracking-wider mb-1">
+                Message / Details
+              </label>
+              <textarea
+                name="message"
+                rows={2}
+                value={formData.message}
+                onChange={handleChange}
+                placeholder="Lead inquiry details..."
+                className="w-full bg-[#F0EEE4] border border-[#C5C2B4] rounded-2xl p-3 text-[#161D18] text-sm focus:border-[#2A4B3A] focus:ring-4 focus:ring-[#2A4B3A]/15 outline-none"
+              />
+            </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-xl hover:bg-slate-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-600/30 disabled:opacity-50"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Create Lead
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#C5C2B4]/60">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 text-xs font-bold text-[#575D58] hover:bg-[#EAE7DC]/60 rounded-full"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#2A4B3A] hover:bg-[#1E372B] text-white font-bold text-xs rounded-full shadow-md shadow-[#2A4B3A]/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Create Lead</span>
+              </button>
+            </div>
+          </form>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

@@ -192,6 +192,27 @@ const getAllUsers = async () => {
   return await User.find({}).sort({ createdAt: -1 });
 };
 
+/**
+ * Update a user's role (Admin-only)
+ * @param {string} userId - Target user's ID
+ * @param {string} role - New role ('admin' | 'member')
+ * @returns {Promise<Object>} Updated user document
+ */
+const updateUserRole = async (userId, role) => {
+  if (!['admin', 'member'].includes(role)) {
+    throw new ApiError(400, "Role must be 'admin' or 'member'");
+  }
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { role },
+    { new: true, runValidators: true }
+  );
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  return user;
+};
+
 module.exports = {
   registerUser,
   createAdminUser,
@@ -200,4 +221,5 @@ module.exports = {
   logoutUser,
   getCurrentUser,
   getAllUsers,
+  updateUserRole,
 };

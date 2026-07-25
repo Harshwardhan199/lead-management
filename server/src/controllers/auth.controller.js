@@ -163,6 +163,20 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
+/**
+ * Update user role (Admin-only)
+ */
+const updateUserRole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    const user = await authService.updateUserRole(id, role);
+    return sendSuccess(res, 200, 'User role updated successfully', { user });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   createAdmin,
@@ -171,4 +185,5 @@ module.exports = {
   logout,
   getMe,
   getAllUsers,
+  updateUserRole,
 };
