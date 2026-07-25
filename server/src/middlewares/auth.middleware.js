@@ -32,6 +32,30 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+/**
+ * Middleware to authorize requests based on user roles
+ * @param  {...string} allowedRoles Roles allowed to access the route ('admin', 'member', etc.)
+ */
+const authorize = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new ApiError(401, 'Authentication required before authorization'));
+    }
+
+    if (allowedRoles.length > 0 && !allowedRoles.includes(req.user.role)) {
+      return next(
+        new ApiError(
+          403,
+          'Forbidden: You do not have permission to access this resource'
+        )
+      );
+    }
+
+    next();
+  };
+};
+
 module.exports = {
   authenticate,
+  authorize,
 };
